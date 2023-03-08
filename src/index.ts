@@ -32,19 +32,18 @@ mongoose
   });
 
 const startServer = () => {
-  app.use(
-    session({
-      secret: config.sessionSecret,
-      cookie: { maxAge: 500 },
-      saveUninitialized: true,
-      store,
-    })
-  );
   app.use(express.json());
   app.use(express.urlencoded());
   app.use("/session", sessionRoutes);
   app.use("/auth", authRoutes);
   app.use("/user", userRoutes);
-
+  app.use(
+    session({
+      secret: config.sessionSecret,
+      cookie: { maxAge: 500000 },
+      saveUninitialized: true,
+      store,
+    })
+  );
   app.listen(config.port, () => console.log(`App is listening at port: ${config.port}`));
 };

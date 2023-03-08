@@ -10,7 +10,6 @@ export const signupUser = async (req: Request, res: Response, next: NextFunction
 
   const user = new User({
     id: new mongoose.Types.ObjectId(),
-    // email,
     username,
     password,
   });
@@ -24,24 +23,62 @@ export const signupUser = async (req: Request, res: Response, next: NextFunction
 };
 
 export const loginSession = async (req: Request, res: Response, next: NextFunction) => {
-  console.log(store);
   const username = req.body.username;
-  const password = req.body.password;
+  let password = req.body.password;
+  const user = await User.find({ username: username });
 
-  if (username && password) {
-    if (req.session.authenticated) {
-      res.json(req.session);
-    } else {
-      if (password == "123") {
-        req.session.authenticated = true;
-        req.session.user = {
-          username,
-          password,
-        };
-        res.status(200).json(req.session);
-      } else {
-        res.status(403).json({ message: "Bad request" });
-      }
+  try {
+    await User.findById(user[0].id);
+    console.log("Succes");
+    // check if password is correct.
+    const isMatch = await user[0].comparePassword(password);
+    console.log(isMatch);
+    if (!isMatch) {
+      res.status(403).send("Please try again.");
+      return;
     }
+
+    password = user[0].password;
+    const userId = user[0]._id;
+
+    req.session.authenticated = true;
+    req.session.user = {
+      username,
+      password,
+      userId,
+    };
+    console.log(req.session);
+    res.status(200).json(req.session);
+  } catch (error) {
+    console.log("User not found.");
+    res.status(404).send("User not found.");
+    return;
   }
+  // const user = await User.findById(userId[0].id);
+
+  // console.log(user);
+
+  // check if username exists.
+  // if (!user) {
+  //   res.status(404).send("Credentials do not match.");
+  //   return;
+  // }
+
+  // check if password is correct.
+  // const isMatch = await user[0].comparePassword(password);
+  // console.log(isMatch);
+  // if (!isMatch) {
+  //   res.status(403).send("Please try again.");
+  //   return;
+  // }
+
+  // password = user[0].password;
+
+  // req.session.authenticated = true;
+  // req.session.user = {
+  //   username,
+  //   password,
+  // };
+  // console.log(req.session);
+  // res.status(200).json(req.session);
 };

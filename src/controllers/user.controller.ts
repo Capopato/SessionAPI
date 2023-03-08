@@ -1,8 +1,21 @@
-import { Request, Response, NextFunction } from "express";
+import e, { Request, Response, NextFunction } from "express";
 import User from "../models/user.model";
 import bcrypt from "bcrypt";
 
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
+  if (req.session && req.session.cookie) {
+    // console.log(req.session);
+    if (req.session.cookie.expires && Date.now() > req.session.cookie.expires.getTime()) {
+      console.log(req.session);
+      res.status(440).json("Session expired.");
+      return;
+    }
+  } else {
+    if (!req.session) {
+      res.status(440).json("Session expired.");
+    }
+  }
+
   const userId = req.params.userId;
   const update = req.body;
 

@@ -10,7 +10,7 @@ export interface userModel extends Document {
 }
 
 export const userSchema: Schema = new Schema({
-  username: { type: String },
+  username: { type: String, unique: true },
   password: { type: String },
   passwordCheck: { type: String },
 });
@@ -37,6 +37,7 @@ userSchema.methods.hashPassword = async function (password: string): Promise<str
   password = hashedPassword;
   return password;
 };
+
 userSchema.methods.comparePassword = async function (passwordCheck: string): Promise<boolean> {
   const user = this as userModel;
 

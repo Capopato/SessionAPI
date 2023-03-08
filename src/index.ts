@@ -34,8 +34,8 @@ mongoose
 const startServer = () => {
   app.use(
     session({
-      secret: "Some secret",
-      cookie: { maxAge: 5000 },
+      secret: config.sessionSecret,
+      cookie: { maxAge: 500 },
       saveUninitialized: true,
       store,
     })

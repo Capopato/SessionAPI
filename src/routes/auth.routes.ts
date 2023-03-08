@@ -6,8 +6,6 @@ import { signupUser } from "../controllers/session.controller";
 const authRoutes = express.Router();
 
 authRoutes.post("/signup", validateUser, signupUser);
-authRoutes.post("/login", passport.authenticate("local"), (req, res) => {
-  res.status(200);
-});
+authRoutes.post("/login");
 
 export default authRoutes;

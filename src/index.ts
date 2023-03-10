@@ -5,6 +5,8 @@ import session from "express-session";
 import authRoutes from "./routes/auth.routes";
 import mongoose from "mongoose";
 import userRoutes from "./routes/user.routes";
+import cookieParser from "cookie-parser";
+import cors from "cors";
 
 export const store = new session.MemoryStore();
 
@@ -32,18 +34,21 @@ mongoose
   });
 
 const startServer = () => {
-  app.use(express.json());
-  app.use(express.urlencoded());
-  app.use("/session", sessionRoutes);
-  app.use("/auth", authRoutes);
-  app.use("/user", userRoutes);
   app.use(
     session({
       secret: config.sessionSecret,
-      cookie: { maxAge: 500000 },
+      cookie: { maxAge: 30000 },
       saveUninitialized: true,
       store,
     })
   );
+  app.use(express.json());
+  app.use(cors());
+  app.use("/session", sessionRoutes);
+  app.use("/auth", authRoutes);
+  app.use("/user", userRoutes);
+  app.use(cookieParser());
+  // app.use(express.urlencoded());
+
   app.listen(config.port, () => console.log(`App is listening at port: ${config.port}`));
 };

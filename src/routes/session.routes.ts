@@ -6,6 +6,5 @@ const sessionRoutes = express.Router();
 
 sessionRoutes.post("/signup", validateUser, signupUser);
 sessionRoutes.post("/login", loginSession);
-sessionRoutes.get("/login");
 
 export default sessionRoutes;

@@ -3,8 +3,8 @@ import User from "../models/user.model";
 import mongoose from "mongoose";
 import session from "express-session";
 import config from "../config/config";
-import { uuid as v4 } from "uuidv4";
-import { signJWT } from "../utils/jwt.utils";
+import { v4 as uuidv4 } from "uuid";
+import { signJWT, validateJWT } from "../utils/jwt.utils";
 
 export const store = new session.MemoryStore();
 
@@ -31,21 +31,24 @@ export const loginSession = async (req: Request, res: Response, next: NextFuncti
   const username = req.body.username;
   let password = req.body.password;
 
-  const user = await User.find({ username: username });
+  // const user = await User.find({ username: username });
+  const findUser = await User.find({ username: username });
 
   try {
-    await User.findById(user[0].id);
+    const user = await User.findById(findUser[0].id);
+    if (!user) {
+      return next();
+    }
     // check if password is correct.
-    const isMatch = await user[0].comparePassword(password);
+    const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
-      res.status(403).send("Please try again.");
-      return;
+      return res.status(403).send("Please try again.");
     }
 
-    password = user[0].password;
-    const userId = user[0]._id;
-    const sessionId = v4();
+    password = user.password;
+    const userId = user._id;
+    const sessionId = uuidv4();
 
     req.session.authenticated = true;
     req.session.user = {
@@ -54,19 +57,31 @@ export const loginSession = async (req: Request, res: Response, next: NextFuncti
       password,
       userId,
     };
+    const accessToken = signJWT({ ...user });
+    const refreshToken = signJWT({ ...user });
 
-    const accessToken = signJWT({ user, session: sessionId }, config.accessTokenLt);
-    const refreshToken = signJWT({ user, session: sessionId }, config.refreshTokenLt);
-
-    res
-      .status(200)
+    return res
+      .cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: false,
+        expires: config.accessTokenLt,
+      })
       .cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: false,
+        expires: config.refreshTokenLt,
       })
-      .json({ accessToken });
+      .status(200)
+      .json({ accessToken, refreshToken });
   } catch (error) {
-    res.status(404).send("User not found.");
-    return;
+    return res.status(404).send("User not found.");
   }
+};
+
+export const logoutSession = async (req: Request, res: Response, next: NextFunction) => {
+  /**
+   * Check if there is an active session. If yes then
+   */
+  res.status(200).send("Ok");
+  next();
 };

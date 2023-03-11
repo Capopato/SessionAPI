@@ -1,9 +1,10 @@
 import jwt from "jsonwebtoken";
 import config from "../config/config";
+import { userModel } from "../models/user.model";
 
-export const signJWT = (user: object, expireTime: string) => {
+export const signJWT = (user: userModel, options?: jwt.SignOptions) => {
   return jwt.sign(user, config.privateKey, {
-    expiresIn: expireTime,
+    ...(options && options),
     algorithm: "RS256",
   });
 };

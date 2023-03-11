@@ -7,6 +7,7 @@ import mongoose from "mongoose";
 import userRoutes from "./routes/user.routes";
 import cookieParser from "cookie-parser";
 import cors from "cors";
+import { deserializeUser } from "./middleware/deserializeUser.middleware";
 
 export const store = new session.MemoryStore();
 
@@ -43,12 +44,12 @@ const startServer = () => {
     })
   );
   app.use(express.json());
+  app.use(deserializeUser);
   app.use(cors());
   app.use("/session", sessionRoutes);
   app.use("/auth", authRoutes);
   app.use("/user", userRoutes);
   app.use(cookieParser());
-  // app.use(express.urlencoded());
 
   app.listen(config.port, () => console.log(`App is listening at port: ${config.port}`));
 };

@@ -1,52 +1,43 @@
 import { Request, Response, NextFunction } from "express";
-import { validateJWT } from "../utils/jwt.utils";
+import { signJWT, validateJWT } from "../utils/jwt.utils";
 import { reissueNewAccessToken } from "../utils/newAccessToken.util";
 import config from "../config/config";
 
 export const deserializeUser = async (req: Request, res: Response, next: NextFunction) => {
-  const headers = req.headers.cookie;
-  if (!headers) {
-    res.status(400);
-    return;
+  const header = req.headers.cookie;
+  if (!header) {
+    return next();
   }
+
   let accessToken = "";
   let refreshToken = "";
 
-  const cookies = headers.split("; ");
-  //   console.log(cookies);
-
+  const cookies = header.split("; ");
   for (let i = 0; i < cookies.length; i++) {
     const cookie = cookies[i].split("=");
-    if (cookie[0] == "accessToken") {
+    if (cookie[0].includes("accessToken")) {
       accessToken = cookie[1];
-    }
-    if (cookie[0] == "refreshToken") {
+    } else if (cookie[0].includes("refreshToken")) {
       refreshToken = cookie[1];
     }
   }
-  //   console.log(validateJWT(refreshToken));
 
   if (!accessToken && !refreshToken) {
-    res.status(440);
-    return next();
+    res.status(400).send("Session not allowed 1.");
   }
 
   if (accessToken) {
     const validateAccessToken = validateJWT(accessToken);
-    if (validateAccessToken.decoded && validateAccessToken.expired == false) {
-      return next();
-    } else {
-      res.status(440);
+    if (validateAccessToken.expired == false) {
       return next();
     }
   }
 
-  if (!accessToken || refreshToken) {
+  if (!accessToken && refreshToken) {
     const newAccessToken = await reissueNewAccessToken(refreshToken);
 
     if (!newAccessToken) {
-      res.status(440);
-      return next();
+      return res.status(400).send("Session not allowed 2.");
     }
 
     res.cookie("newAccessToken", newAccessToken, {
@@ -54,8 +45,6 @@ export const deserializeUser = async (req: Request, res: Response, next: NextFun
       secure: false,
       expires: config.accessTokenLt,
     });
-
-    next();
+    return next();
   }
-  return next();
 };

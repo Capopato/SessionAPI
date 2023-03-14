@@ -1,10 +1,9 @@
-import e, { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import User from "../models/user.model";
-import bcrypt from "bcrypt";
+import { signJWT, validateJWT } from "../utils/jwt.utils";
+import config from "../config/config";
 
 export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
-  console.log(req.session);
-
   const userId = req.params.userId;
   const update = req.body;
 
@@ -14,20 +13,27 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
     return;
   }
 
-  try {
-    const user = await User.findById(userId);
+  const user = await User.findById(userId);
 
-    if (!user) {
-      res.status(404).send("User not found.");
-      return;
-    }
-
-    user.set(update);
-    user.save();
-    res.status(200).json({ user });
-  } catch (error) {
-    res.status(500).json({ error });
+  if (!user) {
+    res.status(404).send("User not found.");
+    return;
   }
+
+  user.set(update);
+  user.save();
+
+  // Sign new refreshToken to add the update to the token.
+  const refreshToken = signJWT({ ...user });
+
+  res
+    .cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: false,
+      expires: config.refreshTokenLt,
+    })
+    .status(200)
+    .json({ user });
 };
 
 export const updatePassword = async (req: Request, res: Response, next: NextFunction) => {
@@ -45,7 +51,6 @@ export const updatePassword = async (req: Request, res: Response, next: NextFunc
       res.status(404).send("User not found.");
       return;
     }
-    // const newHashPassword = await user.hashPassword(req.body.newPassword);
     const isMatch = await user.comparePassword(await req.body.oldPassword);
 
     console.log(isMatch);
@@ -55,8 +60,6 @@ export const updatePassword = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    // user.password = newHashPassword;
-    console.log(user);
     user.set(user.password);
     user.save();
     res.status(200).json({ user });
